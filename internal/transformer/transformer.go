@@ -1,9 +1,52 @@
 // Package transformer does image transformations (grayscale and more)
 package transformer
 
-import "fmt"
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/jpeg"
+	"os"
+)
 
 func Run() error {
-	fmt.Println("Hello from transformer")
+	file, err := os.Open("./example.jpg")
+	if err != nil {
+		fmt.Println("error:", err)
+		return err
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		fmt.Println("error:", err)
+		return err
+	}
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
+
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			red := uint8(r >> 8)
+			green := uint8(g >> 8)
+			blue := uint8(b >> 8)
+			color := color.RGBA{red, green, blue, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	result, err := os.Create("result.jpg")
+	if err != nil {
+		fmt.Println("error:", err)
+		return err
+	}
+	defer result.Close()
+
+	err = jpeg.Encode(result, newImg, &jpeg.Options{Quality: 90})
+	if err != nil {
+		fmt.Println("error:", err)
+		return err
+	}
+	fmt.Println("copied")
 	return nil
 }
