@@ -9,6 +9,22 @@ import (
 	"os"
 )
 
+func InvertedFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			red := uint8(r >> 8)
+			green := uint8(g >> 8)
+			blue := uint8(b >> 8)
+			color := color.RGBA{255 - red, 255 - green, 255 - blue, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+
 func Run() error {
 	file, err := os.Open("./example.jpg")
 	if err != nil {
@@ -22,19 +38,8 @@ func Run() error {
 		fmt.Println("error:", err)
 		return err
 	}
-	bounds := img.Bounds()
-	newImg := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
+	newImg := InvertedFilter(img)
 
-	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			r, g, b, _ := img.At(x, y).RGBA()
-			red := uint8(r >> 8)
-			green := uint8(g >> 8)
-			blue := uint8(b >> 8)
-			color := color.RGBA{red, green, blue, 255}
-			newImg.Set(x, y, color)
-		}
-	}
 	result, err := os.Create("result.jpg")
 	if err != nil {
 		fmt.Println("error:", err)
@@ -47,6 +52,5 @@ func Run() error {
 		fmt.Println("error:", err)
 		return err
 	}
-	fmt.Println("copied")
 	return nil
 }
