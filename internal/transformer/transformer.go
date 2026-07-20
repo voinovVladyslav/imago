@@ -9,9 +9,9 @@ import (
 	"os"
 )
 
-func InvertedFilter(img image.Image) image.Image {
+func invertedFilter(img image.Image) image.Image {
 	bounds := img.Bounds()
-	newImg := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
+	newImg := image.NewRGBA(bounds)
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			r, g, b, _ := img.At(x, y).RGBA()
@@ -20,6 +20,17 @@ func InvertedFilter(img image.Image) image.Image {
 			blue := uint8(b >> 8)
 			color := color.RGBA{255 - red, 255 - green, 255 - blue, 255}
 			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+
+func grayscaleFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewGray(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			newImg.Set(x, y, img.At(x, y))
 		}
 	}
 	return newImg
@@ -38,7 +49,7 @@ func Run() error {
 		fmt.Println("error:", err)
 		return err
 	}
-	newImg := InvertedFilter(img)
+	newImg := grayscaleFilter(img)
 
 	result, err := os.Create("result.jpg")
 	if err != nil {
@@ -47,7 +58,7 @@ func Run() error {
 	}
 	defer result.Close()
 
-	err = jpeg.Encode(result, newImg, &jpeg.Options{Quality: 90})
+	err = jpeg.Encode(result, newImg, &jpeg.Options{Quality: 100})
 	if err != nil {
 		fmt.Println("error:", err)
 		return err
