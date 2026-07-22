@@ -36,6 +36,91 @@ func grayscaleFilter(img image.Image) image.Image {
 	return newImg
 }
 
+func greenlessFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			r, _, b, _ := img.At(x, y).RGBA()
+			red := uint8(r >> 8)
+			blue := uint8(b >> 8)
+			color := color.RGBA{red, 0, blue, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+
+func bluelessFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			r, g, _, _ := img.At(x, y).RGBA()
+			red := uint8(r >> 8)
+			green := uint8(g >> 8)
+			color := color.RGBA{red, green, 0, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+
+func redlessFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			_, g, b, _ := img.At(x, y).RGBA()
+			green := uint8(g >> 8)
+			blue := uint8(b >> 8)
+			color := color.RGBA{0, green, blue, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+
+func redFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			r, _, _, _ := img.At(x, y).RGBA()
+			red := uint8(r >> 8)
+			color := color.RGBA{red, 0, 0, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+func greenFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			_, g, _, _ := img.At(x, y).RGBA()
+			green := uint8(g >> 8)
+			color := color.RGBA{0, green, 0, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+func blueFilter(img image.Image) image.Image {
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			_, _, b, _ := img.At(x, y).RGBA()
+			blue := uint8(b >> 8)
+			color := color.RGBA{0, 0, blue, 255}
+			newImg.Set(x, y, color)
+		}
+	}
+	return newImg
+}
+
 func Run() error {
 	file, err := os.Open("./example.jpg")
 	if err != nil {
@@ -49,7 +134,7 @@ func Run() error {
 		fmt.Println("error:", err)
 		return err
 	}
-	newImg := grayscaleFilter(img)
+	newImg := redFilter(img)
 
 	result, err := os.Create("result.jpg")
 	if err != nil {
