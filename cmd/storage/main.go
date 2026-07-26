@@ -1,9 +1,14 @@
 package main
 
-import "imago/internal/storage"
+import (
+	"fmt"
+	"imago/internal/storage"
+)
 
 
 func main() {
-	storage.Run()
-
+	err := storage.Run()
+	if err != nil {
+		fmt.Println("got error:", err.Error())
+	}
 }
