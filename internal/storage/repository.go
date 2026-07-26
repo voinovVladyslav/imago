@@ -94,10 +94,10 @@ func (r *LocalFileRepo) Get(ctx context.Context, id uuid.UUID) (f io.ReadCloser,
 
 func (r *LocalFileRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	query := "DELETE FROM file_registry WHERE id = ?"
-	_, err := r.db.ExecContext(ctx, query)
+	_, err := r.db.ExecContext(ctx, query, id.String())
 	return err
 }
 
 func NewLocalFileRepo(db *sql.DB) *LocalFileRepo {
-	return &LocalFileRepo{db: db}
+	return &LocalFileRepo{baseDir: ".storage",db: db}
 }

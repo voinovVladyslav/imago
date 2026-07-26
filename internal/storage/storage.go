@@ -3,8 +3,9 @@ package storage
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"fmt"
+	"io"
+	"strings"
 )
 
 func Run() error {
@@ -15,6 +16,21 @@ func Run() error {
 	repo := NewLocalFileRepo(db)
 
 	ctx := context.Background()
-	_, err = repo.Get(ctx, uuid.Must(uuid.NewV7()))
+	record, err := repo.Save(ctx, strings.NewReader("test file contents"))
+	if err != nil {
+		return  err
+	}
+	fmt.Println("Saved to db:", record)
+	f, err := repo.Get(ctx, record.ID)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Got from file itself:", string(data))
+	err = repo.Delete(ctx, record.ID)
 	return err
 }
