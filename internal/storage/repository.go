@@ -32,7 +32,7 @@ type FileRecord struct {
 }
 
 type FileRepo interface {
-	Save(ctx context.Context, f io.Reader) (FileRecord, error)
+	Save(ctx context.Context, f io.Reader) (*FileRecord, error)
 	Get(ctx context.Context, id uuid.UUID) (io.ReadCloser, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }

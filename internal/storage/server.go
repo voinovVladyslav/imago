@@ -2,7 +2,7 @@ package storage
 
 import (
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -15,31 +15,45 @@ type MessageResponse struct {
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 	w.Header().Set("Content-Type", "application/json")
-	data, err := json.Marshal(MessageResponse{Message: "Not Found"})
-	if err != nil {
-		return
-	}
-	w.Write(data)
+	json.NewEncoder(w).Encode(MessageResponse{Message: "Not Found"})
 }
 
-func getFile(w http.ResponseWriter, r *http.Request) {
+func getFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	fileID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(422)
-		data, err := json.Marshal(MessageResponse{Message: "file ID should be valid uuid"})
-		if err != nil {
-			return
-		}
-		w.Write(data)
+		w.Write([]byte("File not found"))
 		return
 	}
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "Valid uuid: %s", fileID)
+	f, err := repo.Get(r.Context(), fileID)
+	if err != nil {
+		w.WriteHeader(404)
+		w.Write([]byte("File not found"))
+		return
+	}
+	defer f.Close()
+	w.Header().Set("Content-Disposition", "attachment; filename=file")
+	io.Copy(w, f)
 }
 
-func Serve() {
-	http.HandleFunc("GET /", statusHandler)
-	http.HandleFunc("GET /file/{id}/", getFile)
+func createHandler(
+	repo FileRepo,
+	handler func(repo FileRepo, w http.ResponseWriter, r *http.Request),
+) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handler(repo, w, r)
+	}
+}
 
-	http.ListenAndServe(":8000", nil)
+func InitServer() error {
+	db, err := NewDB("storage.sqlite3")
+	if err != nil {
+		return err
+	}
+	repo := NewLocalFileRepo(db)
+
+	http.HandleFunc("GET /", statusHandler)
+	http.HandleFunc("GET /file/{id}/", createHandler(repo, getFile))
+
+	return http.ListenAndServe(":8000", nil)
 }

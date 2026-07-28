@@ -36,6 +36,5 @@ func _Run() error {
 }
 
 func Run() error {
-	Serve()
-	return nil
+	return InitServer()
 }
