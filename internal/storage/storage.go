@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func Run() error {
+func _Run() error {
 	db, err := NewDB("storage.sqlite3")
 	if err != nil {
 		return err
@@ -18,7 +18,7 @@ func Run() error {
 	ctx := context.Background()
 	record, err := repo.Save(ctx, strings.NewReader("test file contents"))
 	if err != nil {
-		return  err
+		return err
 	}
 	fmt.Println("Saved to db:", record)
 	f, err := repo.Get(ctx, record.ID)
@@ -33,4 +33,9 @@ func Run() error {
 	fmt.Println("Got from file itself:", string(data))
 	err = repo.Delete(ctx, record.ID)
 	return err
+}
+
+func Run() error {
+	Serve()
+	return nil
 }
