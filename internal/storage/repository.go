@@ -74,30 +74,46 @@ func (r *LocalFileRepo) Save(ctx context.Context, f io.Reader) (record *FileReco
 }
 
 func (r *LocalFileRepo) Get(ctx context.Context, id uuid.UUID) (f io.ReadCloser, err error) {
-	query := "SELECT filepath FROM file_registry WHERE id = ? LIMIT 1"
-	rows, err := r.db.QueryContext(ctx, query, id.String())
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	hasResult := rows.Next()
-	if !hasResult {
-		return nil, errors.New("not found in the database")
-	}
-	var fp string
-	err = rows.Scan(&fp)
+	fp, err := r.getFilePath(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	return os.Open(fp)
 }
 
+func (r *LocalFileRepo) getFilePath(ctx context.Context, id uuid.UUID) (string, error) {
+	query := "SELECT filepath FROM file_registry WHERE id = ? LIMIT 1"
+	rows, err := r.db.QueryContext(ctx, query, id.String())
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	hasResult := rows.Next()
+	if !hasResult {
+		return "", errors.New("not found in the database")
+	}
+	var fp string
+	err = rows.Scan(&fp)
+	if err != nil {
+		return "", err
+	}
+	return fp, nil
+}
+
 func (r *LocalFileRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	fp, err := r.getFilePath(ctx, id)
+	if err != nil {
+		return err
+	}
 	query := "DELETE FROM file_registry WHERE id = ?"
-	_, err := r.db.ExecContext(ctx, query, id.String())
+	_, err = r.db.ExecContext(ctx, query, id.String())
+	if err != nil {
+		return err
+	}
+	err = os.Remove(fp)
 	return err
 }
 
 func NewLocalFileRepo(db *sql.DB) *LocalFileRepo {
-	return &LocalFileRepo{baseDir: ".storage",db: db}
+	return &LocalFileRepo{baseDir: ".storage", db: db}
 }

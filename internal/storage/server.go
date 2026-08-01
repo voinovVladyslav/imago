@@ -61,6 +61,22 @@ func saveFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(FileUploadResponse{ID: fileRecord.ID})
 }
 
+func deleteFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
+	fileID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		w.WriteHeader(422)
+		w.Write([]byte("Invalid file ID"))
+		return
+	}
+	err = repo.Delete(r.Context(), fileID)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("Failed to delete file"))
+		return
+	}
+	w.WriteHeader(204)
+}
+
 func createHandler(
 	repo FileRepo,
 	handler func(repo FileRepo, w http.ResponseWriter, r *http.Request),
@@ -80,6 +96,7 @@ func InitServer() error {
 	http.HandleFunc("GET /", statusHandler)
 	http.HandleFunc("GET /file/{id}/", createHandler(repo, getFile))
 	http.HandleFunc("POST /file/", createHandler(repo, saveFile))
+	http.HandleFunc("DELETE /file/{id}/", createHandler(repo, deleteFile))
 
 	return http.ListenAndServe(":8000", nil)
 }
