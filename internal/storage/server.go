@@ -36,6 +36,31 @@ func getFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, f)
 }
 
+type FileUploadResponse struct {
+	ID uuid.UUID `json:"id"`
+}
+
+// User uploaded file using form and sending file as "file" field
+func saveFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
+	uploadedFile, _, err := r.FormFile("file")
+	if err != nil {
+		w.WriteHeader(400)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(MessageResponse{Message: "Failed to save file"})
+		return
+	}
+	fileRecord, err := repo.Save(r.Context(), uploadedFile)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(MessageResponse{Message: "Failed to save file"})
+		return
+	}
+	w.WriteHeader(201)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(FileUploadResponse{ID: fileRecord.ID})
+}
+
 func createHandler(
 	repo FileRepo,
 	handler func(repo FileRepo, w http.ResponseWriter, r *http.Request),
@@ -54,6 +79,7 @@ func InitServer() error {
 
 	http.HandleFunc("GET /", statusHandler)
 	http.HandleFunc("GET /file/{id}/", createHandler(repo, getFile))
+	http.HandleFunc("POST /file/", createHandler(repo, saveFile))
 
 	return http.ListenAndServe(":8000", nil)
 }

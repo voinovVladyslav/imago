@@ -18,3 +18,7 @@ connect-to-storage-db:
 recreated-storage-db:
     rm -f storage.sqlite3
     sqlite3 storage.sqlite3 < migrations/storage/0001_initial.sql
+
+upload-file-test:
+    curl -X POST http://localhost:8000/file/ -F "file=@example.jpg"
+
