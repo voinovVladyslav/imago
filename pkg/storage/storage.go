@@ -1,5 +1,5 @@
-// Package shared contains reusable structucts
-package shared
+// Package storage contains client to interact with storage service
+package storage
 
 import (
 	"bytes"
@@ -26,6 +26,10 @@ type RemoteFileRepo struct {
 
 type FileUploadResponse struct {
 	ID uuid.UUID `json:"id"`
+}
+
+func NewRemoteFileRepo(endpoint string) *RemoteFileRepo {
+	return &RemoteFileRepo{endpoint: endpoint}
 }
 
 func (r *RemoteFileRepo) Save(ctx context.Context, f io.Reader) (fileID uuid.UUID, err error) {

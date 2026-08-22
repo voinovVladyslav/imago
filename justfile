@@ -21,5 +21,5 @@ recreated-storage-db:
     sqlite3 storage.sqlite3 < migrations/storage/0001_initial.sql
 
 upload-file-test:
-    curl -X POST http://localhost:8001/file/ -F "file=@example.jpg"
+    curl -X POST http://localhost:8000/transform -F "file=@example.jpg" -F "email=admin@admin.com"
 

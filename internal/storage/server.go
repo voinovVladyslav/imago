@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ type MessageResponse struct {
 }
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("request path /")
 	w.WriteHeader(404)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(MessageResponse{Message: "Not Found"})
@@ -23,14 +25,17 @@ func getFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(422)
 		w.Write([]byte("File not found"))
+		log.Println("unable to parse uuid:", err)
 		return
 	}
 	f, err := repo.Get(r.Context(), fileID)
 	if err != nil {
 		w.WriteHeader(404)
 		w.Write([]byte("File not found"))
+		log.Println("file not found:", fileID, err)
 		return
 	}
+	log.Println("return requested file:", fileID)
 	defer f.Close()
 	w.Header().Set("Content-Disposition", "attachment; filename=file")
 	io.Copy(w, f)
@@ -43,22 +48,23 @@ type FileUploadResponse struct {
 // User uploaded file using form and sending file as "file" field
 func saveFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	uploadedFile, _, err := r.FormFile("file")
+	w.WriteHeader(400)
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
 	if err != nil {
-		w.WriteHeader(400)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(MessageResponse{Message: "Failed to save file"})
+		enc.Encode(MessageResponse{Message: "Failed to save file"})
+		log.Println("failed to save file:", err)
 		return
 	}
 	fileRecord, err := repo.Save(r.Context(), uploadedFile)
 	if err != nil {
-		w.WriteHeader(400)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(MessageResponse{Message: "Failed to save file"})
+		enc.Encode(MessageResponse{Message: "Failed to save file"})
+		log.Println("failed to save file:", err)
 		return
 	}
 	w.WriteHeader(201)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(FileUploadResponse{ID: fileRecord.ID})
+	enc.Encode(FileUploadResponse{ID: fileRecord.ID})
+	log.Println("saved file:", fileRecord.ID)
 }
 
 func deleteFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
@@ -66,15 +72,18 @@ func deleteFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(422)
 		w.Write([]byte("Invalid file ID"))
+		log.Println("invalid file id:", err)
 		return
 	}
 	err = repo.Delete(r.Context(), fileID)
 	if err != nil {
 		w.WriteHeader(400)
 		w.Write([]byte("Failed to delete file"))
+		log.Println("failed to delete file:", err)
 		return
 	}
 	w.WriteHeader(204)
+	log.Println("deleted file")
 }
 
 func createHandler(
