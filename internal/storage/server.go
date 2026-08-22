@@ -98,5 +98,5 @@ func InitServer() error {
 	http.HandleFunc("POST /file/", createHandler(repo, saveFile))
 	http.HandleFunc("DELETE /file/{id}/", createHandler(repo, deleteFile))
 
-	return http.ListenAndServe(":8000", nil)
+	return http.ListenAndServe(":8001", nil)
 }
