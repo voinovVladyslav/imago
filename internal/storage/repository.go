@@ -105,12 +105,22 @@ func (r *LocalFileRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	query := "DELETE FROM file_registry WHERE id = ?"
-	_, err = r.db.ExecContext(ctx, query, id.String())
+	_, err = tx.ExecContext(ctx, query, id.String())
 	if err != nil {
 		return err
 	}
 	err = os.Remove(fp)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
 	return err
 }
 
