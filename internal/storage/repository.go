@@ -124,6 +124,6 @@ func (r *LocalFileRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-func NewLocalFileRepo(db *sql.DB) *LocalFileRepo {
-	return &LocalFileRepo{baseDir: ".storage", db: db}
+func NewLocalFileRepo(db *sql.DB, baseDir string) *LocalFileRepo {
+	return &LocalFileRepo{baseDir: baseDir, db: db}
 }

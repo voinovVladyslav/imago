@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -96,16 +97,21 @@ func createHandler(
 }
 
 func InitServer() error {
-	db, err := NewDB("storage.sqlite3")
+	config, err := NewConfig()
 	if err != nil {
 		return err
 	}
-	repo := NewLocalFileRepo(db)
+	db, err := NewDB(config.SqliteDSN)
+	if err != nil {
+		return err
+	}
+	repo := NewLocalFileRepo(db, config.FileStorageDir)
 
 	http.HandleFunc("GET /", statusHandler)
 	http.HandleFunc("GET /file/{id}/", createHandler(repo, getFile))
 	http.HandleFunc("POST /file/", createHandler(repo, saveFile))
 	http.HandleFunc("DELETE /file/{id}/", createHandler(repo, deleteFile))
 
-	return http.ListenAndServe(":8001", nil)
+	log.Printf("starting storage server. listening at port %v", config.Port)
+	return http.ListenAndServe(fmt.Sprintf(":%v", config.Port), nil)
 }
