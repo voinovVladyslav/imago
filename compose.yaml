@@ -1,0 +1,19 @@
+name: 'imago'
+
+services:
+  rabbit:
+    image: rabbitmq:4.3.5-management
+    env_file: .env
+    environment:
+        - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST}
+        - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+        - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+    ports:
+        - "5672:5672"
+        - "15672:15672"
+    volumes:
+        - rabbit-data:/var/lib/rabbitmq
+
+volumes:
+  rabbit-data:
+
