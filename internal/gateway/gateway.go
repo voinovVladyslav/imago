@@ -3,6 +3,7 @@ package gateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -47,9 +48,13 @@ func createHandler(
 }
 
 func Run() error {
-	repo := storage.NewRemoteFileRepo("http://localhost:8001")
+	config, err := NewConfig()
+	if err != nil {
+		log.Fatal("failed to initialize config")
+	}
+	repo := storage.NewRemoteFileRepo(config.FileRepoURL)
 	http.HandleFunc("POST /transform", createHandler(repo, acceptFileTransformRequest))
 
-	log.Println("starting gateway server. listening at port 8000")
-	return http.ListenAndServe(":8000", nil)
+	log.Printf("starting gateway server. listening at port %v", config.Port)
+	return http.ListenAndServe(fmt.Sprintf(":%v", config.Port), nil)
 }
