@@ -14,6 +14,17 @@ services:
     volumes:
         - rabbit-data:/var/lib/rabbitmq
 
+  redis:
+    image: redis:8.8.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - redis-data:/root/redis
+      - redis-data:/usr/local/etc/redis/redis.conf
+      - redis-data:/dump.rdb
+
 volumes:
   rabbit-data:
+  redis-data:
 
