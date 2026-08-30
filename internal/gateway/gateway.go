@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"imago/pkg/broker"
 	"imago/pkg/storage"
 )
 
@@ -14,7 +15,12 @@ type MessageResponse struct {
 	Message string `json:"message"`
 }
 
-func acceptFileTransformRequest(repo storage.FileRepo, w http.ResponseWriter, r *http.Request) {
+func acceptFileTransformRequest(
+	b *broker.Broker,
+	repo storage.FileRepo,
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	w.Header().Set("Content-Type", "application/json")
 	email := r.FormValue("email")
 	encoder := json.NewEncoder(w)
@@ -38,14 +44,26 @@ func acceptFileTransformRequest(repo storage.FileRepo, w http.ResponseWriter, r 
 	log.Printf("Uploaded file ID: %s\n", fileID)
 	w.WriteHeader(201)
 	json.NewEncoder(w).Encode(MessageResponse{Message: "Uploaded"})
+	b.SendJSON(
+		MessageResponse{
+			Message: fmt.Sprintf("uploaded file: %s", fileID),
+		},
+		"file.uploaded",
+	)
 }
 
 func createHandler(
+	b *broker.Broker,
 	repo storage.FileRepo,
-	handler func(repo storage.FileRepo, w http.ResponseWriter, r *http.Request),
+	handler func(
+		b *broker.Broker,
+		repo storage.FileRepo,
+		w http.ResponseWriter,
+		r *http.Request,
+	),
 ) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		handler(repo, w, r)
+		handler(b, repo, w, r)
 	}
 }
 
@@ -54,8 +72,21 @@ func Run() error {
 	if err != nil {
 		log.Fatal("failed to initialize config")
 	}
+
+	b, err := broker.NewBroker(
+		broker.BrokerConfig{
+			User:  "imago",
+			Pass:  "strongpassword",
+			Host:  "localhost",
+			Port:  "5672",
+			Vhost: "imago",
+		},
+	)
+	if err != nil {
+		log.Fatal("failed to initialize config")
+	}
 	repo := storage.NewRemoteFileRepo(config.FileRepoURL)
-	http.HandleFunc("POST /transform", createHandler(repo, acceptFileTransformRequest))
+	http.HandleFunc("POST /transform", createHandler(b, repo, acceptFileTransformRequest))
 
 	log.Printf("starting gateway server. listening at port %v", config.Port)
 	return http.ListenAndServe(fmt.Sprintf(":%v", config.Port), nil)
