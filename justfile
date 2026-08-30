@@ -13,6 +13,9 @@ run-storage:
 run-gateway:
     go run ./cmd/gateway/main.go
 
+run-logger:
+    go run ./cmd/logger/main.go
+
 connect-to-storage-db:
     sqlite3 storage.sqlite3
 
