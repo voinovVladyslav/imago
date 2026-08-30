@@ -49,16 +49,17 @@ type FileUploadResponse struct {
 // User uploaded file using form and sending file as "file" field
 func saveFile(repo FileRepo, w http.ResponseWriter, r *http.Request) {
 	uploadedFile, _, err := r.FormFile("file")
-	w.WriteHeader(400)
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	if err != nil {
+		w.WriteHeader(400)
 		enc.Encode(MessageResponse{Message: "Failed to save file"})
 		log.Println("failed to save file:", err)
 		return
 	}
 	fileRecord, err := repo.Save(r.Context(), uploadedFile)
 	if err != nil {
+		w.WriteHeader(400)
 		enc.Encode(MessageResponse{Message: "Failed to save file"})
 		log.Println("failed to save file:", err)
 		return

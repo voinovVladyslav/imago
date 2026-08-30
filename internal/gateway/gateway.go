@@ -15,21 +15,23 @@ type MessageResponse struct {
 }
 
 func acceptFileTransformRequest(repo storage.FileRepo, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(400)
 	w.Header().Set("Content-Type", "application/json")
 	email := r.FormValue("email")
 	encoder := json.NewEncoder(w)
 	if email == "" {
+		w.WriteHeader(400)
 		encoder.Encode(MessageResponse{Message: "Missing field 'email'"})
 		return
 	}
 	file, _, err := r.FormFile("file")
 	if err != nil {
+		w.WriteHeader(400)
 		encoder.Encode(MessageResponse{Message: "Failed to save file"})
 		return
 	}
 	fileID, err := repo.Save(r.Context(), file)
 	if err != nil {
+		w.WriteHeader(400)
 		encoder.Encode(MessageResponse{Message: "Failed to save file"})
 		return
 	}
