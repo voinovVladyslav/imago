@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"imago/pkg/broker"
+	"imago/pkg/cache"
 	"imago/pkg/storage"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type MessageResponse struct {
@@ -16,8 +20,7 @@ type MessageResponse struct {
 }
 
 func acceptFileTransformRequest(
-	b *broker.Broker,
-	repo storage.FileRepo,
+	session *Session,
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
@@ -35,7 +38,7 @@ func acceptFileTransformRequest(
 		encoder.Encode(MessageResponse{Message: "Failed to save file"})
 		return
 	}
-	fileID, err := repo.Save(r.Context(), file)
+	fileID, err := session.files.Save(r.Context(), file)
 	if err != nil {
 		w.WriteHeader(400)
 		encoder.Encode(MessageResponse{Message: "Failed to save file"})
@@ -44,7 +47,12 @@ func acceptFileTransformRequest(
 	log.Printf("Uploaded file ID: %s\n", fileID)
 	w.WriteHeader(201)
 	json.NewEncoder(w).Encode(MessageResponse{Message: "Uploaded"})
-	b.SendJSON(
+	key := fmt.Sprintf("request:%s", fileID)
+	err = session.cache.Set(r.Context(), key, email, time.Hour*24).Err()
+	if err != nil {
+		log.Printf("failed to set cache key: %s", err)
+	}
+	session.broker.SendJSON(
 		MessageResponse{
 			Message: fmt.Sprintf("uploaded file: %s", fileID),
 		},
@@ -53,18 +61,22 @@ func acceptFileTransformRequest(
 }
 
 func createHandler(
-	b *broker.Broker,
-	repo storage.FileRepo,
+	session *Session,
 	handler func(
-		b *broker.Broker,
-		repo storage.FileRepo,
+		session *Session,
 		w http.ResponseWriter,
 		r *http.Request,
 	),
 ) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		handler(b, repo, w, r)
+		handler(session, w, r)
 	}
+}
+
+type Session struct {
+	cache  *redis.Client
+	broker *broker.Broker
+	files  storage.FileRepo
 }
 
 func Run() error {
@@ -72,6 +84,7 @@ func Run() error {
 	if err != nil {
 		log.Fatal("failed to initialize config")
 	}
+	repo := storage.NewRemoteFileRepo(config.FileRepoURL)
 
 	b, err := broker.NewBroker(
 		broker.BrokerConfig{
@@ -83,10 +96,14 @@ func Run() error {
 		},
 	)
 	if err != nil {
-		log.Fatal("failed to initialize config")
+		log.Fatal("failed to initialize broker")
 	}
-	repo := storage.NewRemoteFileRepo(config.FileRepoURL)
-	http.HandleFunc("POST /transform", createHandler(b, repo, acceptFileTransformRequest))
+
+	c := cache.NewCache()
+	defer c.Close()
+	s := &Session{cache: c, broker: b, files: repo}
+
+	http.HandleFunc("POST /transform", createHandler(s, acceptFileTransformRequest))
 
 	log.Printf("starting gateway server. listening at port %v", config.Port)
 	return http.ListenAndServe(fmt.Sprintf(":%v", config.Port), nil)

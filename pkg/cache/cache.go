@@ -11,6 +11,5 @@ func NewCache() *redis.Client {
 		Password: "",
 		DB:       1,
 	})
-	defer rdb.Close()
 	return rdb
 }
